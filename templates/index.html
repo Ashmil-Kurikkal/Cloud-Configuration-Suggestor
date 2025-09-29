@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonimbus</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --light-gray: #f8f9fa;
+            --medium-gray: #ced4da;
+            --dark-gray: #343a40;
+            --white: #fff;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: var(--white);
+            padding: 2rem 3rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        h1, h2, h3 { color: var(--primary-hover); }
+        h1 { text-align: center; }
+        .form-step { display: none; animation: fadeIn 0.5s; }
+        .form-step.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .progress-bar { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+        .progress-step { text-align: center; position: relative; flex: 1; }
+        .progress-step .step-circle {
+            width: 30px; height: 30px; border-radius: 50%; background: var(--white);
+            border: 2px solid var(--medium-gray); display: inline-flex; justify-content: center;
+            align-items: center; font-weight: bold; color: var(--medium-gray); transition: all 0.3s ease;
+        }
+        .progress-step .step-title { margin-top: 0.5rem; font-size: 0.9rem; color: var(--medium-gray); }
+        .progress-step.active .step-circle, .progress-step.active .step-title { color: var(--primary-color); }
+        .progress-step.active .step-circle { border-color: var(--primary-color); }
+        .progress-step::after {
+            content: ''; height: 2px; width: calc(100% - 40px); background: var(--medium-gray);
+            position: absolute; top: 16px; left: calc(50% + 20px); z-index: -1;
+        }
+        .progress-step:last-child::after { display: none; }
+        .progress-step.active::after { background: var(--primary-color); }
+        .question-group { margin-bottom: 1.5rem; }
+        label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+        .question-subtext { font-size: 0.9rem; color: #6c757d; margin-top: 0; margin-bottom: 0.75rem; }
+        select, input[type="number"] {
+            width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid var(--medium-gray);
+            font-size: 1rem; box-sizing: border-box; background-color: var(--white);
+        }
+        .btn-group { margin-top: 2rem; display: flex; justify-content: space-between; }
+        .btn {
+            padding: 0.8rem 1.5rem; font-size: 1rem; font-weight: bold; color: var(--white);
+            background-color: var(--primary-color); border: none; border-radius: 4px; cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn:disabled { background-color: var(--medium-gray); cursor: not-allowed; }
+        .btn-prev { background-color: #6c757d; }
+        .btn-prev:hover { background-color: #5a6268; }
+        
+        /* Estimator Styles */
+        .help-btn { color: var(--primary-color); text-decoration: none; font-size: 0.9rem; cursor: pointer; display: inline-block; margin-top: 4px;}
+        .estimator-panel { display: none; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-top: 1rem; background: #fdfdfd; animation: fadeIn 0.5s; }
+        .estimator-panel h4 { margin-top: 0; }
+        .estimator-panel .btn-calc { font-size: 0.9rem; padding: 0.5rem 1rem; margin-top: 1rem; }
+        .estimation-result { font-size: 0.9rem; color: var(--success); font-weight: bold; margin-top: 0.5rem; display: none; }
+        #cost-suggestion {
+            display: none;
+            margin-top: 10px;
+            padding: 0.75rem;
+            background-color: #e2f3f5;
+            border: 1px solid #b6e0e6;
+            border-radius: 4px;
+            color: #0c5460;
+        }
+
+        /* Custom Project Builder */
+        #custom-project-builder { display: none; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-top: 1rem; background: #fdfdfd; }
+        .tag-group h3 { font-size: 1rem; margin-bottom: 0.5rem; color: #333; }
+        .tags-container { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .tag-label input { display: none; }
+        .tag-label span {
+            display: block; padding: 0.4rem 0.8rem; border: 1px solid var(--medium-gray);
+            border-radius: 20px; font-size: 0.9rem; transition: all 0.2s ease-in-out; cursor: pointer;
+        }
+        .tag-label input:checked + span { background-color: var(--primary-color); color: var(--white); border-color: var(--primary-color); }
+        
+        /* Results Styling */
+        .results-container { margin-top: 2rem; }
+        .explanation-box { padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid transparent; }
+        .explanation-box.info { background-color: #e2f3f5; border-color: #b6e0e6; color: #0c5460; }
+        .explanation-box p { margin: 0; }
+        .result-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .result-card h3 { margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
+        .result-card.best-choice { border-color: var(--success); border-width: 2px; background-color: #fafffa; }
+        .badge { display: inline-block; padding: 0.3em 0.65em; font-size: 80%; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem; color: #fff; }
+        .badge-success { background-color: var(--success); }
+        .badge-warning { background-color: var(--warning); color: #212529;}
+        .badge-info { background-color: var(--info); }
+        .result-card .analogy { font-style: italic; color: #6c757d; border-left: 3px solid var(--medium-gray); padding-left: 1rem; margin: 1rem 0; }
+        .result-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;}
+        .result-details ul { list-style-type: none; padding-left: 0; margin: 0; }
+        .result-details li strong { color: var(--primary-hover); }
+        .pros-cons { margin-top: 1rem; }
+        .pros-cons ul { list-style-type: '✓  '; padding-left: 1.5rem; }
+        .pros-cons ul.cons { list-style-type: '✗  '; }
+        .pros-cons h4 { margin-bottom: 0.5rem; }
+        .additional-info-card { background-color: #fdfdfd; border: 1px solid #e0e0e0; }
+        .additional-info-card h4 { color: var(--primary-hover); }
+
+        .suggestions-container {
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #dee2e6;
+        }
+        .suggestion-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .suggestion-card h3 {
+            margin-top: 0;
+            color: var(--primary-hover);
+        }
+        .suggestion-card .service-list {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .suggestion-card .service-list li {
+            background-color: #e2e6ea;
+            color: #495057;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cloud Configuration Advisor</h1>
+        <p style="text-align: center;">Answer a few questions to get a tailored cloud server recommendation for your project.</p>
+        
+        <div id="form-container">
+            <form id="recommendation-form">
+                <div class="progress-bar">
+                    <div class="progress-step active"><div class="step-circle">1</div><div class="step-title">Project</div></div>
+                    <div class="progress-step"><div class="step-circle">2</div><div class="step-title">Scale</div></div>
+                    <div class="progress-step"><div class="step-circle">3</div><div class="step-title">Technical</div></div>
+                    <div class="progress-step"><div class="step-circle">4</div><div class="step-title">Priorities</div></div>
+                </div>
+
+                <div class="form-step active">
+                    <div class="question-group">
+                        <label for="app_type">What is the primary purpose of your application?</label>
+                        <p class="question-subtext">Choose a preset or describe your project using tags below.</p>
+                        <select id="app_type" name="app_type" required>
+                            <option value="" disabled selected>Select an option...</option>
+                            <option value="blog_portfolio">Simple Blog or Portfolio</option>
+                            <option value="ecommerce">E-commerce Store</option>
+                            <option value="interactive_app">Interactive Web App (Social, SaaS)</option>
+                            <option value="data_analytics">Data Analytics or Processing</option>
+                            <option value="booking_system">Online Booking or Reservation System</option>
+                            <option value="custom">My project is different...</option>
+                        </select>
+                    </div>
+                    <div id="custom-project-builder">
+                        <h4>Select all features that apply to your project:</h4>
+                        <div class="tag-group">
+                            <h3>Core Functionality</h3>
+                            <div class="tags-container">
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="logins"><span>👤 User Logins & Profiles</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="payments"><span>💳 Online Payments</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="search"><span>🔎 Advanced Search</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="real_time"><span>⚡ Real-time Features (Chat, Notifications)</span></label>
+                            </div>
+                        </div>
+                        <div class="tag-group">
+                            <h3>Data & Content</h3>
+                            <div class="tags-container">
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="text_content"><span>📝 Primarily Text</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="user_images"><span>🖼️ User Images</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="uploads"><span>📂 File Uploads</span></label>
+                                <label class="tag-label"><input type="checkbox" name="custom_tags" value="datasets"><span>📊 Large Datasets</span></label>
+                            </div>
+                        </div>
+                         <div class="tag-group">
+                            <h3>Workload Pattern</h3>
+                            <div class="tags-container">
+                                 <label class="tag-label"><input type="checkbox" name="custom_tags" value="read_heavy"><span>📈 Read-Heavy (lots of viewing)</span></label>
+                                 <label class="tag-label"><input type="checkbox" name="custom_tags" value="write_heavy"><span>✍️ Write-Heavy (lots of saving/updating)</span></label>
+                                 <label class="tag-label"><input type="checkbox" name="custom_tags" value="compute_heavy"><span>🧠 Compute-Heavy (calculations)</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group"><button type="button" id="next-btn-1" class="btn btn-next" disabled>Next</button></div>
+                </div>
+
+                <div class="form-step">
+                    <div class="question-group">
+                        <label for="traffic">Anticipated Monthly Traffic</label>
+                        <p class="question-subtext">Determines the processing power (vCPU) needed.</p>
+                        <select id="traffic" name="traffic" required>
+                            <option value="" disabled selected>Select an option...</option>
+                            <option value="low">Low (Under 10,000 visitors)</option>
+                            <option value="medium">Medium (10,000 - 100,000 visitors)</option>
+                            <option value="high">High (100,000 - 1,000,000 visitors)</option>
+                            <option value="viral">Very High / Viral (1,000,000+)</option>
+                        </select>
+                        <a href="#" class="help-btn" data-target="traffic-estimator">I'm not sure, help me estimate.</a>
+                        <div class="estimation-result" id="traffic-result"></div>
+                    </div>
+                    <div id="traffic-estimator" class="estimator-panel">
+                        <h4>Traffic Estimator</h4>
+                        <div class="question-group">
+                            <label for="traffic-q1">How would you describe your project's audience?</label>
+                            <select id="traffic-q1">
+                                <option value="1">Personal project / Just starting out</option>
+                                <option value="2">Small business / Local community</option>
+                                <option value="3">Established product / National audience</option>
+                                <option value="4">Expecting viral growth / Major launch</option>
+                            </select>
+                        </div>
+                        <div class="question-group">
+                            <label for="traffic-q2">During your busiest hour, how many users do you expect to be active at once?</label>
+                            <select id="traffic-q2">
+                                <option value="1">A handful (&lt;10)</option>
+                                <option value="2">A classroom full (10 - 50)</option>
+                                <option value="3">A concert hall (50 - 500)</option>
+                                <option value="4">A stadium (500+)</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-calc" data-calc="traffic">Estimate My Traffic</button>
+                    </div>
+
+                    <div class="question-group">
+                        <label for="db_size">Expected Database Size</label>
+                        <p class="question-subtext">Larger databases require more RAM to operate efficiently.</p>
+                        <select id="db_size" name="db_size" required>
+                            <option value="" disabled selected>Select an option...</option>
+                            <option value="small">Small (Under 10 GB)</option>
+                            <option value="medium">Medium (10 GB - 100 GB)</option>
+                            <option value="large">Large (Over 100 GB)</option>
+                        </select>
+                        <a href="#" class="help-btn" data-target="db-estimator">I'm not sure, help me estimate.</a>
+                        <div class="estimation-result" id="db-result"></div>
+                    </div>
+                    <div id="db-estimator" class="estimator-panel">
+                        <h4>Database Size Estimator</h4>
+                        <div class="question-group">
+                            <label>What kind of data will you primarily store? (Select all that apply)</label>
+                            <div id="db-q1-tags" style="line-height: 2;">
+                               <label><input type="checkbox" value="1"> User profiles (name, email, etc.)</label><br>
+                               <label><input type="checkbox" value="1"> Blog posts / Text articles</label><br>
+                               <label><input type="checkbox" value="2"> Product listings with details</label><br>
+                               <label><input type="checkbox" value="3"> User-uploaded images (e.g., photos, avatars)</label><br>
+                               <label><input type="checkbox" value="4"> User-uploaded documents or videos</label><br>
+                               <label><input type="checkbox" value="2"> Detailed application logs</label><br>
+                            </div>
+                        </div>
+                         <div class="question-group">
+                            <label for="db-q2">Over the next year, roughly how many total items (users, posts, products) do you expect?</label>
+                            <select id="db-q2">
+                                <option value="1">Hundreds</option>
+                                <option value="2">Thousands</option>
+                                <option value="3">Tens of thousands</option>
+                                <option value="4">Hundreds of thousands or more</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-calc" data-calc="db">Estimate My DB Size</button>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-prev">Previous</button>
+                        <button type="button" class="btn btn-next" id="next-btn-2" disabled>Next</button>
+                    </div>
+                </div>
+
+                <div class="form-step">
+                    <div class="question-group">
+                        <label for="storage_type">Storage Performance</label>
+                        <p class="question-subtext">NVMe SSDs offer the fastest disk access, ideal for databases or file-heavy apps.</p>
+                        <select id="storage_type" name="storage_type" required>
+                            <option value="any" selected>Standard is fine</option>
+                            <option value="ssd">I need a Solid State Drive (SSD)</option>
+                            <option value="nvme_ssd">I need a high-speed NVMe SSD</option>
+                        </select>
+                    </div>
+                     <div class="question-group">
+                        <label for="network_performance">Network Performance</label>
+                        <p class="question-subtext">Higher network performance is crucial for applications with heavy data transfer or real-time communication.</p>
+                        <select id="network_performance" name="network_performance" required>
+                            <option value="any" selected>Standard (1-5 Gbps)</option>
+                            <option value="medium">Enhanced (Up to 10 Gbps)</option>
+                            <option value="high">High (25 Gbps+)</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-prev">Previous</button>
+                        <button type="button" class="btn btn-next" id="next-btn-3" disabled>Next</button>
+                    </div>
+                </div>
+
+                <div class="form-step">
+                    <div class="question-group">
+                        <label for="priority">What is your main priority?</label>
+                        <p class="question-subtext">This adjusts our scoring to favor either lower cost or higher performance.</p>
+                        <select id="priority" name="priority" required>
+                            <option value="balanced" selected>Balanced (Good mix of cost and performance)</option>
+                            <option value="cost">Lowest Cost</option>
+                            <option value="performance">Highest Performance</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-prev">Previous</button>
+                        <button type="submit" class="btn">Find My Configuration</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div id="results-container" class="results-container"></div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Form Navigation & State ---
+    const formSteps = document.querySelectorAll('.form-step');
+    const prevBtns = document.querySelectorAll('.btn-prev');
+    const form = document.getElementById('recommendation-form');
+    const progressSteps = document.querySelectorAll('.progress-step');
+    let currentStep = 0;
+    
+    let fullResults = [];
+
+    const updateSteps = () => {
+        formSteps.forEach((step, index) => step.classList.toggle('active', index === currentStep));
+        progressSteps.forEach((step, index) => {
+            step.classList.toggle('active', index <= currentStep);
+        });
+    };
+    
+    document.querySelectorAll('.btn-next').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentStep < formSteps.length - 1) {
+                currentStep++;
+                updateSteps();
+            }
+        });
+    });
+
+    prevBtns.forEach(btn => btn.addEventListener('click', () => { if (currentStep > 0) { currentStep--; updateSteps(); } }));
+    
+    // --- Step 1 Validation ---
+    const appTypeSelect = document.getElementById('app_type');
+    const customProjectBuilder = document.getElementById('custom-project-builder');
+    const customTags = document.querySelectorAll('input[name="custom_tags"]');
+    const nextBtn1 = document.getElementById('next-btn-1');
+
+    const validateStep1 = () => {
+        const appType = appTypeSelect.value;
+        if (!appType) {
+            nextBtn1.disabled = true;
+            return;
+        }
+        if (appType === 'custom') {
+            nextBtn1.disabled = !Array.from(customTags).some(tag => tag.checked);
+        } else {
+            nextBtn1.disabled = false;
+        }
+    };
+    appTypeSelect.addEventListener('change', () => {
+        customProjectBuilder.style.display = appTypeSelect.value === 'custom' ? 'block' : 'none';
+        validateStep1();
+    });
+    customTags.forEach(tag => tag.addEventListener('change', validateStep1));
+    validateStep1();
+
+    // --- Estimator Panel Logic ---
+    document.querySelectorAll('.help-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const panel = document.getElementById(e.target.getAttribute('data-target'));
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        });
+    });
+
+    document.querySelectorAll('.btn-calc').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const calcType = e.target.getAttribute('data-calc');
+            if (calcType === 'traffic') calculateTraffic();
+            else if (calcType === 'db') calculateDbSize();
+        });
+    });
+
+    function calculateTraffic() {
+        const score = parseInt(document.getElementById('traffic-q1').value, 10) + parseInt(document.getElementById('traffic-q2').value, 10);
+        let resultValue = 'low', resultText = 'Low';
+        if (score >= 7) { resultValue = 'viral'; resultText = 'Very High / Viral'; }
+        else if (score >= 5) { resultValue = 'high'; resultText = 'High'; }
+        else if (score >= 3) { resultValue = 'medium'; resultText = 'Medium'; }
+        document.getElementById('traffic').value = resultValue;
+        const resultDiv = document.getElementById('traffic-result');
+        resultDiv.textContent = `✓ Estimated as '${resultText}'. You can change this if needed.`;
+        resultDiv.style.display = 'block';
+        document.getElementById('traffic-estimator').style.display = 'none';
+        validateStep2(); // Re-validate after auto-selection
+    }
+
+    function calculateDbSize() {
+        let typeScore = 0;
+        document.querySelectorAll('#db-q1-tags input:checked').forEach(box => typeScore += parseInt(box.value, 10));
+        const finalScore = typeScore * parseInt(document.getElementById('db-q2').value, 10);
+        let resultValue = 'small', resultText = 'Small';
+        if (finalScore > 15) { resultValue = 'large'; resultText = 'Large'; }
+        else if (finalScore > 6) { resultValue = 'medium'; resultText = 'Medium'; }
+        document.getElementById('db_size').value = resultValue;
+        const resultDiv = document.getElementById('db-result');
+        resultDiv.textContent = `✓ Estimated as '${resultText}'. You can change this if needed.`;
+        resultDiv.style.display = 'block';
+        document.getElementById('db-estimator').style.display = 'none';
+        validateStep2(); // Re-validate after auto-selection
+    }
+    
+    // --- Form Submission & Results ---
+    form.addEventListener('submit', async function(e) { 
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        let data = (formData.get('app_type') === 'custom') 
+            ? { ...Object.fromEntries(Array.from(formData.entries()).filter(([key]) => key !== 'custom_tags')), custom_tags: formData.getAll('custom_tags') }
+            : Object.fromEntries(formData.entries());
+
+        const resultsContainer = document.getElementById('results-container');
+        resultsContainer.innerHTML = '<p>🧠 Analyzing your needs and crunching the numbers...</p>';
+        document.getElementById('form-container').style.display = 'none';
+
+        try {
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const resultData = await response.json();
+            
+            fullResults = resultData.results || []; 
+            displayResults(resultData.explanation || null, resultData.error || null);
+            if (resultData.suggestions && resultData.suggestions.length > 0) {
+                displaySuggestions(resultData.suggestions);
+            }
+
+        } catch (error) {
+            resultsContainer.innerHTML = `<p style="color:red;">An error occurred while contacting the server. Please try again.</p>`;
+        }
+    });
+
+    function displayResults(explanation, error) {
+        const resultsContainer = document.getElementById('results-container');
+        resultsContainer.innerHTML = '';
+
+        if (error) {
+            resultsContainer.innerHTML = `<p style="color:var(--danger); font-weight:bold;">${error}</p>`;
+            let backHtml = `<div class="btn-group" style="justify-content: center;"><button type="button" id="refine-btn" class="btn btn-prev">Go Back & Adjust</button></div>`;
+            resultsContainer.innerHTML += backHtml;
+            addRefineButtonListener();
+            return;
+        }
+        
+        let html = `<h2>Your Recommended Configuration</h2>`;
+        html += `<div class="explanation-box info"><p>${explanation}</p></div>`;
+        
+        html += `
+            <div class="result-card" style="background-color: #f8f9fa;">
+                <div class="question-group">
+                    <label for="max_budget_filter">Refine results by your maximum monthly budget:</label>
+                    <input type="number" id="max_budget_filter" name="max_budget_filter" value="500" min="5" style="max-width: 200px;">
+                </div>
+            </div>
+        `;
+        
+        html += `<div id="filtered-cards-container"></div>`;
+        html += `<div class="btn-group" style="justify-content: center;"><button type="button" id="refine-btn" class="btn btn-prev">Start Over</button></div>`;
+        resultsContainer.innerHTML = html;
+
+        document.getElementById('max_budget_filter').addEventListener('input', renderFilteredResults);
+        addRefineButtonListener();
+        renderFilteredResults();
+    }
+
+    function renderFilteredResults() {
+        const budget = parseInt(document.getElementById('max_budget_filter').value, 10) || 99999;
+        const container = document.getElementById('filtered-cards-container');
+        const filtered = fullResults.filter(inst => inst.cost_per_month <= budget);
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color: var(--danger);">No options found within your budget of $${budget}. Try increasing it.</p>`;
+            return;
+        }
+        
+        const bestChoice = filtered[0];
+        // Find an upgrade option based on either more vCPU or more RAM
+        let upgradeChoice = filtered.find(inst => inst.cost_per_month > bestChoice.cost_per_month && (inst.vcpu > bestChoice.vcpu || inst.ram > bestChoice.ram));
+        // Find a budget alternative that is cheaper
+        let budgetChoice = [...filtered].reverse().find(inst => inst.cost_per_month < bestChoice.cost_per_month);
+
+        let html = '';
+        html += createCard(bestChoice, 'Best Choice', 'success');
+        if (upgradeChoice && upgradeChoice.name !== bestChoice.name) {
+            html += createCard(upgradeChoice, 'Upgrade Option', 'warning');
+        }
+        if (budgetChoice && budgetChoice.name !== bestChoice.name) {
+             html += createCard(budgetChoice, 'Budget Alternative', 'info');
+        }
+        
+        container.innerHTML = html;
+    }
+
+    function displaySuggestions(suggestions) {
+        const resultsContainer = document.getElementById('results-container');
+        let html = `
+            <div class="suggestions-container">
+                <h2>Additional Service Recommendations</h2>
+                <p>Based on your project's needs, you should also consider using these types of services to build a robust and scalable application.</p>
+            </div>
+        `;
+        
+        suggestions.forEach(suggestion => {
+            html += `
+                <div class="suggestion-card">
+                    <h3>${suggestion.title}</h3>
+                    <p>${suggestion.description}</p>
+                    <ul class="service-list">
+                        ${suggestion.services.map(service => `<li>${service}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        });
+
+        resultsContainer.insertAdjacentHTML('beforeend', html);
+    }
+    
+    function addRefineButtonListener() {
+        const refineBtn = document.getElementById('refine-btn');
+        if (refineBtn) {
+            refineBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+    }
+    
+    function createCard(instance, title, badgeClass) {
+        // Use flat properties and provide default values
+        const storage = instance.storage_gb ? `${instance.storage_gb} GB` : 'EBS Only';
+        const monthlyCost = instance.cost_per_month ? `$${instance.cost_per_month.toFixed(2)}` : 'N/A';
+
+        // Simplified pros/cons based on the instance's category
+        let pros = [], cons = [];
+        if (instance.web_serving > 1.0) pros.push("Optimized for web traffic");
+        if (instance.database > 1.0) pros.push("Strong database performance");
+        if (instance.caching > 1.0) pros.push("Excellent for caching workloads");
+        if (pros.length === 0) pros.push("Balanced performance profile");
+        if (instance.cost_per_month > 200) cons.push("Higher monthly cost");
+        else cons.push("May not scale to very high-end tasks");
+
+        return `
+            <div class="result-card ${title === 'Best Choice' ? 'best-choice' : ''}">
+                <h3>${instance.name} <span class="badge badge-${badgeClass}">${title}</span></h3>
+                <div class="result-details">
+                    <ul>
+                        <li><strong>Provider:</strong> ${instance.provider}</li>
+                        <li><strong>Monthly Cost:</strong> ${monthlyCost}</li>
+                        <li><strong>Network:</strong> ${instance.network_gbps || 'Standard'} Gbps</li>
+                    </ul>
+                    <ul>
+                        <li><strong>vCPU:</strong> ${instance.vcpu} Cores</li>
+                        <li><strong>RAM:</strong> ${instance.ram} GB</li>
+                        <li><strong>Storage:</strong> ${storage}</li>
+                    </ul>
+                </div>
+                <div class="pros-cons">
+                    <div style="display: inline-block; width: 48%; vertical-align: top;">
+                       <h4>Pros</h4>
+                       <ul class="pros">${pros.map(adv => `<li>${adv}</li>`).join('')}</ul>
+                    </div>
+                    <div style="display: inline-block; width: 48%; vertical-align: top;">
+                       <h4>Cons</h4>
+                       <ul class="cons">${cons.map(dis => `<li>${dis}</li>`).join('')}</ul>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // --- Step 2 Validation ---
+    const trafficSelect = document.getElementById('traffic');
+    const dbSizeSelect = document.getElementById('db_size');
+    const nextBtn2 = document.getElementById('next-btn-2');
+
+    const validateStep2 = () => {
+        const traffic = trafficSelect.value;
+        const dbSize = dbSizeSelect.value;
+        nextBtn2.disabled = !traffic || !dbSize;
+    };
+
+    trafficSelect.addEventListener('change', validateStep2);
+    dbSizeSelect.addEventListener('change', validateStep2);
+    validateStep2(); // Initial check
+
+    // --- Step 3 Validation ---
+    const storageTypeSelect = document.getElementById('storage_type');
+    const networkPerfSelect = document.getElementById('network_performance');
+    const nextBtn3 = document.getElementById('next-btn-3');
+
+    const validateStep3 = () => {
+        nextBtn3.disabled = !storageTypeSelect.value || !networkPerfSelect.value;
+    };
+
+    storageTypeSelect.addEventListener('change', validateStep3);
+    networkPerfSelect.addEventListener('change', validateStep3);
+    validateStep3(); // Initial check
+});
+</script>
+</body>
+</html>
